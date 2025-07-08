@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Playlist Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Animation for current playing song */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .playing {
+            animation: pulse 2s infinite;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        /* Smooth transitions */
+        .song-item {
+            transition: all 0.3s ease;
+        }
+        .song-item:hover {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-600 mb-2">YouTube Playlist Player</h1>
+            <p class="text-gray-600">Create and manage your custom YouTube playlist</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Playlist Controls -->
+            <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Playlist Controls</h2>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2">Add YouTube Video</label>
+                    <div class="flex">
+                        <input type="text" id="videoUrl" placeholder="Enter YouTube URL or ID" 
+                               class="flex-grow px-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="addBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r-lg transition">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Example: https://youtu.be/dQw4w9WgXcQ or just dQw4w9WgXcQ</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2">Playlist Options</label>
+                    <div class="flex space-x-2">
+                        <button id="shuffleBtn" class="flex-grow bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-lg transition">
+                            <i class="fas fa-random"></i> Shuffle
+                        </button>
+                        <button id="loopBtn" class="flex-grow bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg transition">
+                            <i class="fas fa-redo"></i> Loop
+                        </button>
+                        <button id="clearBtn" class="flex-grow bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg transition">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Sort Playlist</label>
+                    <div class="flex space-x-2">
+                        <button id="sortTitleBtn" class="flex-grow bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg transition">
+                            <i class="fas fa-sort-alpha-down"></i> By Title
+                        </button>
+                        <button id="sortRecentBtn" class="flex-grow bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg transition">
+                            <i class="fas fa-clock"></i> By Recent
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-700 mb-2">Playlist Info</h3>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Total Songs:</span>
+                        <span id="totalSongs" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm mt-1">
+                        <span class="text-gray-600">Current Song:</span>
+                        <span id="currentSongNumber" class="font-medium">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm mt-1">
+                        <span class="text-gray-600">Status:</span>
+                        <span id="playbackStatus" class="font-medium">Not Playing</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Middle Column - Video Player -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
+                <div class="aspect-w-16 aspect-h-9 mb-4">
+                    <div id="player" class="w-full h-64 sm:h-80 md:h-96 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-music text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-500">Add songs to your playlist to begin</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 id="videoTitle" class="text-xl font-semibold text-gray-800 truncate">No song selected</h2>
+                        <p id="videoChannel" class="text-gray-600 text-sm">-</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prevBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 p-2 rounded-full transition">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <button id="playPauseBtn" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button id="nextBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 p-2 rounded-full transition">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-100 rounded-full h-2 mb-2">
+                    <div id="progressBar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span id="currentTime">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Playlist Songs -->
+        <div class="mt-8 bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="p-4 border-b">
+                <h2 class="text-xl font-semibold text-gray-800">Your Playlist</h2>
+            </div>
+            <div id="playlistSongs" class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                <div class="p-4 text-center text-gray-500">
+                    <p>Your playlist is empty. Add some songs to get started!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YouTube Player API -->
+    <script>
+        // YouTube Player API
+        let player;
+        let playlist = [];
+        let currentIndex = -1;
+        let isShuffle = false;
+        let isLoop = false;
+        let isPlaying = false;
+        let originalPlaylistOrder = [];
+        
+        // Load YouTube API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        
+        // Initialize player
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 1,
+                    'rel': 0,
+                    'showinfo': 0,
+                    'modestbranding': 1,
+                    'fs': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+        
+        function onPlayerReady(event) {
+            updatePlayerInfo();
+            setInterval(updateProgressBar, 1000);
+        }
+        
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                if (isLoop) {
+                    playCurrentSong();
+                } else {
+                    playNextSong();
+                }
+            } else if (event.data === YT.PlayerState.PLAYING) {
+                isPlaying = true;
+                updatePlaybackStatus();
+                highlightCurrentSong();
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                isPlaying = false;
+                updatePlaybackStatus();
+            }
+        }
+        
+        // DOM Elements
+        const videoUrlInput = document.getElementById('videoUrl');
+        const addBtn = document.getElementById('addBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const loopBtn = document.getElementById('loopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const sortTitleBtn = document.getElementById('sortTitleBtn');
+        const sortRecentBtn = document.getElementById('sortRecentBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const playlistSongs = document.getElementById('playlistSongs');
+        const videoTitle = document.getElementById('videoTitle');
+        const videoChannel = document.getElementById('videoChannel');
+        const progressBar = document.getElementById('progressBar');
+        const currentTime = document.getElementById('currentTime');
+        const duration = document.getElementById('duration');
+        const totalSongs = document.getElementById('totalSongs');
+        const currentSongNumber = document.getElementById('currentSongNumber');
+        const playbackStatus = document.getElementById('playbackStatus');
+        
+        // Event Listeners
+        addBtn.addEventListener('click', addSong);
+        videoUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addSong();
+        });
+        shuffleBtn.addEventListener('click', toggleShuffle);
+        loopBtn.addEventListener('click', toggleLoop);
+        clearBtn.addEventListener('click', clearPlaylist);
+        sortTitleBtn.addEventListener('click', sortByTitle);
+        sortRecentBtn.addEventListener('click', sortByRecent);
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        prevBtn.addEventListener('click', playPreviousSong);
+        nextBtn.addEventListener('click', playNextSong);
+        
+        // Functions
+        function addSong() {
+            const url = videoUrlInput.value.trim();
+            if (!url) return;
+            
+            let videoId = extractVideoId(url);
+            if (!videoId) {
+                alert('Please enter a valid YouTube URL or Video ID');
+                return;
+            }
+            
+            // Check if video already exists in playlist
+            if (playlist.some(song => song.id === videoId)) {
+                alert('This video is already in your playlist!');
+                videoUrlInput.value = '';
+                return;
+            }
+            
+            // Get video details
+            fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=AIzaSyBTTfqZy5f8K5a6PtnhLAzwVaZts5h4gMc`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.items.length === 0) {
+                        alert('Video not found. Please check the URL.');
+                        return;
+                    }
+                    
+                    const video = data.items[0];
+                    const newSong = {
+                        id: videoId,
+                        title: video.snippet.title,
+                        channel: video.snippet.channelTitle,
+                        thumbnail: video.snippet.thumbnails.default.url,
+                        addedAt: new Date().getTime()
+                    };
+                    
+                    playlist.push(newSong);
+                    originalPlaylistOrder = [...playlist];
+                    renderPlaylist();
+                    updateTotalSongs();
+                    videoUrlInput.value = '';
+                    
+                    // If this is the first song, play it automatically
+                    if (playlist.length === 1) {
+                        currentIndex = 0;
+                        playCurrentSong();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching video details:', error);
+                    alert('Error fetching video details. Please try again.');
+                });
+        }
+        
+        function extractVideoId(url) {
+    // If input is already a valid 11-character video ID, return it
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+        return url;
+    }
+
+    // Try to extract video ID from URL using regex
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    // Return match if it's 11 chars; otherwise, return null
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+        
+        function renderPlaylist() {
+            if (playlist.length === 0) {
+                playlistSongs.innerHTML = `
+                    <div class="p-4 text-center text-gray-500">
+                        <p>Your playlist is empty. Add some songs to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            playlistSongs.innerHTML = playlist.map((song, index) => `
+                <div class="song-item flex items-center p-3 hover:bg-gray-50 cursor-pointer ${index === currentIndex ? 'playing bg-blue-50' : ''}" 
+                     data-index="${index}" onclick="playSongFromIndex(${index})">
+                    <div class="w-12 h-12 bg-gray-200 rounded overflow-hidden mr-3">
+                        <img src="${song.thumbnail}" alt="${song.title}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <h3 class="font-medium text-gray-800 truncate">${song.title}</h3>
+                        <p class="text-sm text-gray-600 truncate">${song.channel}</p>
+                    </div>
+                    <button class="text-red-500 hover:text-red-700 p-2" onclick="removeSong(event, ${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        function playSongFromIndex(index) {
+            currentIndex = index;
+            playCurrentSong();
+        }
+        
+        function removeSong(event, index) {
+            event.stopPropagation();
+            
+            if (index === currentIndex) {
+                // If removing current song, stop player and move to next if available
+                player.stopVideo();
+                isPlaying = false;
+                updatePlaybackStatus();
+                
+                playlist.splice(index, 1);
+                originalPlaylistOrder.splice(index, 1);
+                
+                if (playlist.length > 0) {
+                    currentIndex = Math.min(index, playlist.length - 1);
+                    playCurrentSong();
+                } else {
+                    currentIndex = -1;
+                    resetPlayerUI();
+                }
+            } else {
+                // Adjust currentIndex if needed
+                if (index < currentIndex) {
+                    currentIndex--;
+                }
+                playlist.splice(index, 1);
+                originalPlaylistOrder.splice(index, 1);
+            }
+            
+            renderPlaylist();
+            updateTotalSongs();
+        }
+        
+        function playCurrentSong() {
+            if (currentIndex === -1 || playlist.length === 0) return;
+            
+            const song = playlist[currentIndex];
+            player.loadVideoById(song.id);
+            updatePlayerInfo();
+            highlightCurrentSong();
+            updateCurrentSongNumber();
+        }
+        
+        function playNextSong() {
+            if (playlist.length === 0) return;
+            
+            if (isShuffle) {
+                currentIndex = Math.floor(Math.random() * playlist.length);
+            } else {
+                currentIndex = (currentIndex + 1) % playlist.length;
+            }
+            
+            playCurrentSong();
+        }
+        
+        function playPreviousSong() {
+            if (playlist.length === 0) return;
+            
+            if (isShuffle) {
+                currentIndex = Math.floor(Math.random() * playlist.length);
+            } else {
+                currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+            }
+            
+            playCurrentSong();
+        }
+        
+        function togglePlayPause() {
+            if (currentIndex === -1 && playlist.length > 0) {
+                currentIndex = 0;
+                playCurrentSong();
+                return;
+            }
+            
+            if (isPlaying) {
+                player.pauseVideo();
+            } else {
+                player.playVideo();
+            }
+        }
+        
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            shuffleBtn.classList.toggle('bg-purple-500', !isShuffle);
+            shuffleBtn.classList.toggle('bg-purple-700', isShuffle);
+            shuffleBtn.innerHTML = isShuffle 
+                ? '<i class="fas fa-random"></i> Shuffling' 
+                : '<i class="fas fa-random"></i> Shuffle';
+            
+            if (isShuffle) {
+                // Store original order before shuffling
+                originalPlaylistOrder = [...playlist];
+                
+                // Fisher-Yates shuffle algorithm
+                for (let i = playlist.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+                }
+                
+                // Find and update currentIndex after shuffle
+                if (currentIndex !== -1) {
+                    const currentSongId = originalPlaylistOrder[currentIndex].id;
+                    currentIndex = playlist.findIndex(song => song.id === currentSongId);
+                }
+            } else {
+                // Restore original order
+                playlist = [...originalPlaylistOrder];
+                
+                // Restore currentIndex
+                if (currentIndex !== -1) {
+                    const currentSongId = playlist[currentIndex].id;
+                    currentIndex = originalPlaylistOrder.findIndex(song => song.id === currentSongId);
+                }
+            }
+            
+            renderPlaylist();
+        }
+        
+        function toggleLoop() {
+            isLoop = !isLoop;
+            loopBtn.classList.toggle('bg-green-500', !isLoop);
+            loopBtn.classList.toggle('bg-green-700', isLoop);
+            loopBtn.innerHTML = isLoop 
+                ? '<i class="fas fa-redo"></i> Looping' 
+                : '<i class="fas fa-redo"></i> Loop';
+        }
+        
+        function clearPlaylist() {
+            if (confirm('Are you sure you want to clear the entire playlist?')) {
+                playlist = [];
+                originalPlaylistOrder = [];
+                currentIndex = -1;
+                player.stopVideo();
+                isPlaying = false;
+                renderPlaylist();
+                updateTotalSongs();
+                resetPlayerUI();
+                updatePlaybackStatus();
+            }
+        }
+        
+        function sortByTitle() {
+            playlist.sort((a, b) => a.title.localeCompare(b.title));
+            originalPlaylistOrder = [...playlist];
+            
+            // Update currentIndex after sort
+            if (currentIndex !== -1) {
+                const currentSongId = playlist[currentIndex].id;
+                currentIndex = playlist.findIndex(song => song.id === currentSongId);
+            }
+            
+            renderPlaylist();
+        }
+        
+        function sortByRecent() {
+            playlist.sort((a, b) => b.addedAt - a.addedAt);
+            originalPlaylistOrder = [...playlist];
+            
+            // Update currentIndex after sort
+            if (currentIndex !== -1) {
+                const currentSongId = playlist[currentIndex].id;
+                currentIndex = playlist.findIndex(song => song.id === currentSongId);
+            }
+            
+            renderPlaylist();
+        }
+        
+        function updatePlayerInfo() {
+            if (currentIndex === -1 || playlist.length === 0) return;
+            
+            const song = playlist[currentIndex];
+            videoTitle.textContent = song.title;
+            videoChannel.textContent = song.channel;
+        }
+        
+        function resetPlayerUI() {
+            videoTitle.textContent = 'No song selected';
+            videoChannel.textContent = '-';
+            progressBar.style.width = '0%';
+            currentTime.textContent = '0:00';
+            duration.textContent = '0:00';
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            currentSongNumber.textContent = '-';
+        }
+        
+        function updateProgressBar() {
+            if (!player || !player.getCurrentTime || !player.getDuration) return;
+            
+            const current = player.getCurrentTime();
+            const total = player.getDuration();
+            
+            if (isNaN(current) || isNaN(total) || total === 0) return;
+            
+            const percent = (current / total) * 100;
+            progressBar.style.width = percent + '%';
+            
+            currentTime.textContent = formatTime(current);
+            duration.textContent = formatTime(total);
+        }
+        
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+        
+        function highlightCurrentSong() {
+            const songItems = document.querySelectorAll('.song-item');
+            songItems.forEach((item, index) => {
+                item.classList.toggle('playing', index === currentIndex);
+            });
+        }
+        
+        function updateTotalSongs() {
+            totalSongs.textContent = playlist.length;
+        }
+        
+        function updateCurrentSongNumber() {
+            currentSongNumber.textContent = currentIndex === -1 ? '-' : `${currentIndex + 1}/${playlist.length}`;
+        }
+        
+        function updatePlaybackStatus() {
+            if (currentIndex === -1) {
+                playbackStatus.textContent = 'Not Playing';
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                return;
+            }
+            
+            if (isPlaying) {
+                playbackStatus.textContent = 'Playing';
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                playbackStatus.textContent = 'Paused';
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        }
+    </script>
+</body>
+</html>
