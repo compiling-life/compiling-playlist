@@ -300,7 +300,11 @@
                     };
                     
                     playlist.push(newSong);
-                    savePlaylistToLocalStorage();
+savePlaylistToLocalStorage();
+originalPlaylistOrder = [...playlist];
+renderPlaylist();
+updateTotalSongs();
+
                     originalPlaylistOrder = [...playlist];
                     renderPlaylist();
                     updateTotalSongs();
@@ -606,12 +610,16 @@
 }
 
 function loadPlaylistFromLocalStorage() {
-    const saved = localStorage.getItem('savedPlaylist');
-    if (saved) {
-        playlist = JSON.parse(saved);
-        originalPlaylistOrder = [...playlist];
-    }
+  const saved = localStorage.getItem('savedPlaylist');
+  if (saved) {
+    playlist = JSON.parse(saved);
+    originalPlaylistOrder = [...playlist];
+  } else {
+    playlist = [];
+    originalPlaylistOrder = [];
+  }
 }
+
 
     </script>
 </body>
