@@ -163,6 +163,8 @@
         </div>
     </div>
 
+    <script src="storage.js"></script>
+
     <!-- YouTube Player API -->
     <script>
         // YouTube Player API
@@ -173,6 +175,10 @@
         let isLoop = false;
         let isPlaying = false;
         let originalPlaylistOrder = [];
+        loadPlaylistFromLocalStorage();
+        renderPlaylist();
+        updateTotalSongs();
+
         
         // Load YouTube API
         const tag = document.createElement('script');
@@ -294,6 +300,7 @@
                     };
                     
                     playlist.push(newSong);
+                    savePlaylistToLocalStorage();
                     originalPlaylistOrder = [...playlist];
                     renderPlaylist();
                     updateTotalSongs();
@@ -593,6 +600,19 @@
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
             }
         }
+
+        function savePlaylistToLocalStorage() {
+    localStorage.setItem('savedPlaylist', JSON.stringify(playlist));
+}
+
+function loadPlaylistFromLocalStorage() {
+    const saved = localStorage.getItem('savedPlaylist');
+    if (saved) {
+        playlist = JSON.parse(saved);
+        originalPlaylistOrder = [...playlist];
+    }
+}
+
     </script>
 </body>
 </html>
