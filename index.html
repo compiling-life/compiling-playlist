@@ -314,6 +314,9 @@
         }*/
 // TESTING
         function addSong() {
+            console.log("Entered URL:", url);
+console.log("Extracted playlist ID:", extractPlaylistId(url));
+console.log("Extracted video ID:", extractVideoId(url));
     const url = videoUrlInput.value.trim();
     if (!url) return;
 
@@ -431,13 +434,11 @@ function fetchAndAddPlaylist(playlistId, pageToken = '') {
 
     // TESTING
     function extractPlaylistId(url) {
-    try {
-        const parsedUrl = new URL(url);
-        return parsedUrl.searchParams.get("list");
-    } catch {
-        return null;
-    }
+    const regex = /[?&]list=([a-zA-Z0-9_-]+)/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
 }
+
 // TESTING
 
     // Try to extract video ID from URL using regex
