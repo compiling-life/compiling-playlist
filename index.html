@@ -341,7 +341,7 @@ console.log("Extracted video ID:", extractVideoId(url));
         return;
     }
 
-    fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=YOUR_API_KEY`)
+    fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=AIzaSyBTTfqZy5f8K5a6PtnhLAzwVaZts5h4gMc`)
         .then(response => response.json())
         .then(data => {
             if (data.items.length === 0) {
